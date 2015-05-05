@@ -214,32 +214,37 @@ void loop(){
 // VECTOR BOOST - Add synthetic input to improve direction change
 //bool directionChange = (((lastX[0] >> 3 < lastX[1] >> 3) && (lastX[0] >> 3 > lastX[2] >> 3)));// || ((lastX[0] >> 4 > lastX[1] >> 4) && (lastX[0] >> 4 < lastX[2] >> 4)));
 
-int vX = (lastX[0] + 360) - (lastX[1] + 360);
 
-if (vX > 10) {
-  x += mode;
-  lastX[1] = x;
-  lastX[2] = x;
-  Serial.println("RIGHT");
-} else if (vX < -10) {
-  x -= mode;
-  lastX[1] = x;
-  lastX[2] = x;
-  Serial.println("LEFT");
+if (abs(lastX[0]) > mode/2) {  
+  int vX = (lastX[0] + 360) - (lastX[1] + 360);
+  
+  if (vX > 15) {
+    x += mode;
+    lastX[1] = x;
+    lastX[2] = x;
+    Serial.println("RIGHT");
+  } else if (vX < -15) {
+    x -= mode;
+    lastX[1] = x;
+    lastX[2] = x;
+    Serial.println("LEFT");
+  }
 }
 
-int vY = (lastY[0] + 360) - (lastY[1] + 360);
-
-if (vY > 10) {
-  y += mode;
-  lastY[1] = y;
-  lastY[2] = y;
-  Serial.println("DOWN");
-} else if (vY < -10) {
-  y -= mode;
-  lastY[1] = y;
-  lastY[2] = y;
-  Serial.println("UP");
+if (abs(lastY[0]) > mode/2) {  
+  int vY = (lastY[0] + 360) - (lastY[1] + 360);
+  
+  if (vY > 15) {
+    y += mode;
+    lastY[1] = y;
+    lastY[2] = y;
+    Serial.println("DOWN");
+  } else if (vY < -15) {
+    y -= mode;
+    lastY[1] = y;
+    lastY[2] = y;
+    Serial.println("UP");
+  }
 }
 
   if (digitalRead(BUTTON_1) == LOW) {
