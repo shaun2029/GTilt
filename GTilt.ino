@@ -207,45 +207,53 @@ void loop(){
   
   // Record Y offest at start
   if (firstLoop) {
+    offsetX = -x;
     offsetY = -y;
     firstLoop = false;
   }
 
-// VECTOR BOOST - Add synthetic input to improve direction change
-//bool directionChange = (((lastX[0] >> 3 < lastX[1] >> 3) && (lastX[0] >> 3 > lastX[2] >> 3)));// || ((lastX[0] >> 4 > lastX[1] >> 4) && (lastX[0] >> 4 < lastX[2] >> 4)));
 
-
-if (abs(lastX[0]) > mode/2) {  
-  int vX = (lastX[0] + 360) - (lastX[1] + 360);
-  
-  if (vX > 15) {
-    x += mode;
-    lastX[1] = x;
-    lastX[2] = x;
-    Serial.println("RIGHT");
-  } else if (vX < -15) {
-    x -= mode;
-    lastX[1] = x;
-    lastX[2] = x;
-    Serial.println("LEFT");
+  // VECTOR BOOST - Add synthetic input to improve direction change
+  if (abs(lastX[0]) > mode/2) {  
+    int vX = (lastX[0] + 360) - (lastX[1] + 360);
+    
+    if (vX > 15) {
+      x = mode;
+      // Fill filter FIFO with new values
+      for (int i=1; i > FILTERSIZE; i--) {
+        lastX[i] = x;
+      }
+      Serial.println("RIGHT");
+    } else if (vX < -15) {
+      x = -mode;
+      // Fill filter FIFO with new values
+      for (int i=1; i > FILTERSIZE; i--) {
+        lastX[i] = x;
+      }
+      Serial.println("LEFT");
+    }
   }
-}
-
-if (abs(lastY[0]) > mode/2) {  
-  int vY = (lastY[0] + 360) - (lastY[1] + 360);
   
-  if (vY > 15) {
-    y += mode;
-    lastY[1] = y;
-    lastY[2] = y;
-    Serial.println("DOWN");
-  } else if (vY < -15) {
-    y -= mode;
-    lastY[1] = y;
-    lastY[2] = y;
-    Serial.println("UP");
+  if (abs(lastY[0]) > mode/2) {  
+    int vY = (lastY[0] + 360) - (lastY[1] + 360);
+    
+    if (vY > 15) {
+      y = mode;
+      // Fill filter FIFO with new values
+      for (int i=1; i > FILTERSIZE; i--) {
+        lastY[i] = y;
+      }
+      Serial.println("DOWN");
+    } else if (vY < -15) {
+      y = -mode;
+      // Fill filter FIFO with new values
+      for (int i=1; i > FILTERSIZE; i--) {
+        lastY[i] = y;
+      }
+      Serial.println("UP");
+    }
   }
-}
+
 
   if (digitalRead(BUTTON_1) == LOW) {
     
@@ -300,7 +308,7 @@ if (abs(lastY[0]) > mode/2) {
   }
 
   // If the device has not been moved for 60 seconds power it down
-  if ((lastFilteredX >> 3 != x >> 3) || (lastFilteredY >> 3 != y >> 3))  {
+  if ((abs(lastFilteredX) >> 4 != abs(x) >> 4) || (abs(lastFilteredY) >> 4 != abs(y) >> 4))  {
     powerOffTime = millis();
   }
 
@@ -310,14 +318,20 @@ if (abs(lastY[0]) > mode/2) {
   }
 
   // If the device has not been moved assume recentering
-  if ( (abs(lastFilteredX) > 20) || (abs(lastFilteredY) > 45) || (lastFilteredX >> 3 != x >> 3) || (lastFilteredY >> 3 != y >> 3))  {
+  if ((abs(lastFilteredX) > 45) || (abs(lastFilteredY) > 45) || (abs(lastFilteredX) >> 4 != abs(x) >> 4) || (abs(lastFilteredY) >> 4 != abs(y) >> 4))  {
     centerTime = millis();
   }
 
+Serial.print(lastFilteredX, DEC);
+Serial.print(",");
+Serial.println(lastFilteredY, DEC);
+
   // If the device has not been moved assume it is centered
   if (millis() - centerTime > 5000) {
+    offsetX = -x;
     offsetY = -y;
     centerTime = millis();
+    Serial.println("CENTERED");
   }
 
   lastFilteredX = x;
