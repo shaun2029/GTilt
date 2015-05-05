@@ -153,6 +153,8 @@ void loop(){
   static int lastY[FILTERSIZE];
   static int lastFilteredX = 0;
   static int lastFilteredY = 0;
+  static int stillX = 0;
+  static int stillY = 0;
   static int offsetX = 0;
   static int offsetY = 0;
   static bool firstLoop = true;
@@ -218,14 +220,14 @@ void loop(){
     int vX = (lastX[0] + 360) - (lastX[1] + 360);
     
     if (vX > 15) {
-      x = mode;
+      x = mode*2;
       // Fill filter FIFO with new values
       for (int i=1; i > FILTERSIZE; i--) {
         lastX[i] = x;
       }
       Serial.println("RIGHT");
     } else if (vX < -15) {
-      x = -mode;
+      x = -mode*2;
       // Fill filter FIFO with new values
       for (int i=1; i > FILTERSIZE; i--) {
         lastX[i] = x;
@@ -238,14 +240,14 @@ void loop(){
     int vY = (lastY[0] + 360) - (lastY[1] + 360);
     
     if (vY > 15) {
-      y = mode;
+      y = mode*2;
       // Fill filter FIFO with new values
       for (int i=1; i > FILTERSIZE; i--) {
         lastY[i] = y;
       }
       Serial.println("DOWN");
     } else if (vY < -15) {
-      y = -mode;
+      y = +mode*2;
       // Fill filter FIFO with new values
       for (int i=1; i > FILTERSIZE; i--) {
         lastY[i] = y;
@@ -308,37 +310,44 @@ void loop(){
   }
 
   // If the device has not been moved for 60 seconds power it down
-  if ((abs(lastFilteredX) >> 4 != abs(x) >> 4) || (abs(lastFilteredY) >> 4 != abs(y) >> 4))  {
-    powerOffTime = millis();
-  }
 
+  // Test if the device has been moved
+  if  ((abs(abs(stillX) - abs(x)) > 4) || (abs(abs(stillY) - abs(y)) > 4))  {
+    stillX = x;
+    stillY = y;
+
+    // Reset time if moved
+    powerOffTime = millis();
+    
+    // Reset time if moved or not centered
+    centerTime = millis();
+  } else if ((abs(x) > 45) || (abs(x) > 45)) {
+    // Reset time if moved or not centered
+    centerTime = millis();
+  }
+  
+  lastFilteredX = x;
+  lastFilteredY = y;
+  
   // Test if it is time to power down
   if (millis() - powerOffTime > 30000) {
     GoToSleep();
   }
-
-  // If the device has not been moved assume recentering
-  if ((abs(lastFilteredX) > 45) || (abs(lastFilteredY) > 45) || (abs(lastFilteredX) >> 4 != abs(x) >> 4) || (abs(lastFilteredY) >> 4 != abs(y) >> 4))  {
-    centerTime = millis();
-  }
-
+  
 Serial.print(lastFilteredX, DEC);
 Serial.print(",");
 Serial.println(lastFilteredY, DEC);
 
   // If the device has not been moved assume it is centered
-  if (millis() - centerTime > 5000) {
-    offsetX = -x;
-    offsetY = -y;
+  if (millis() - centerTime > 3000) {
+    offsetX = -stillX;
+    offsetY = -stillY;
     centerTime = millis();
     Serial.println("CENTERED");
   }
 
-  lastFilteredX = x;
-  lastFilteredY = y;
-
   int cycle = loopCount % 1;
-  int cycleMode = mode / 4;
+  int cycleMode = mode / 2;
   cycleMode += (mode * cycle) / 2;
 
   if (x + offsetX > cycleMode) {  
