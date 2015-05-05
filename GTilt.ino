@@ -91,7 +91,7 @@ void setup(){
   if ((EEPROM.read(NV_MAGIC_1) != 77) || (EEPROM.read(NV_MAGIC_2) != 77)) {
     mode = DEFAULT_MODE;
     EEPROM.write(NV_MAGIC_1, 77);
-    EEPROM.write(NV_MAGIC_2, 77);
+    EEPROM.write(NV_MAGIC_2, 58);
     EEPROM.write(NV_MODE, mode);
   }
 
@@ -207,18 +207,40 @@ void loop(){
   
   // Record Y offest at start
   if (firstLoop) {
-    offsetX = -x;
     offsetY = -y;
     firstLoop = false;
   }
 
 // VECTOR BOOST - Add synthetic input to improve direction change
-int vectorX1 = lastX[0] - lastX[1];
-int vectorY1 = lastY[0] - lastY[1];
+//bool directionChange = (((lastX[0] >> 3 < lastX[1] >> 3) && (lastX[0] >> 3 > lastX[2] >> 3)));// || ((lastX[0] >> 4 > lastX[1] >> 4) && (lastX[0] >> 4 < lastX[2] >> 4)));
 
-x += (int)((float)vectorX1 * (float)VECTORBOOST);
-y += (int)((float)vectorY1 * (float)VECTORBOOST);
+int vX = (lastX[0] + 360) - (lastX[1] + 360);
 
+if (vX > 10) {
+  x += mode;
+  lastX[1] = x;
+  lastX[2] = x;
+  Serial.println("RIGHT");
+} else if (vX < -10) {
+  x -= mode;
+  lastX[1] = x;
+  lastX[2] = x;
+  Serial.println("LEFT");
+}
+
+int vY = (lastY[0] + 360) - (lastY[1] + 360);
+
+if (vY > 10) {
+  y += mode;
+  lastY[1] = y;
+  lastY[2] = y;
+  Serial.println("DOWN");
+} else if (vY < -10) {
+  y -= mode;
+  lastY[1] = y;
+  lastY[2] = y;
+  Serial.println("UP");
+}
 
   if (digitalRead(BUTTON_1) == LOW) {
     
@@ -277,25 +299,24 @@ y += (int)((float)vectorY1 * (float)VECTORBOOST);
     powerOffTime = millis();
   }
 
-  lastFilteredX = x;
-  lastFilteredY = y;
-
   // Test if it is time to power down
   if (millis() - powerOffTime > 30000) {
     GoToSleep();
   }
 
-  // If the device has not been moved assume
-  if ( (abs(lastFilteredX) > 15) || (abs(lastFilteredY) > 30) || (lastFilteredX >> 3 != x >> 3) || (lastFilteredY >> 3 != y >> 3))  {
+  // If the device has not been moved assume recentering
+  if ( (abs(lastFilteredX) > 20) || (abs(lastFilteredY) > 45) || (lastFilteredX >> 3 != x >> 3) || (lastFilteredY >> 3 != y >> 3))  {
     centerTime = millis();
   }
 
   // If the device has not been moved assume it is centered
   if (millis() - centerTime > 5000) {
-    offsetX = -x;
     offsetY = -y;
     centerTime = millis();
   }
+
+  lastFilteredX = x;
+  lastFilteredY = y;
 
   int cycle = loopCount % 1;
   int cycleMode = mode / 4;
