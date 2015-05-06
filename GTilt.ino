@@ -42,9 +42,8 @@ char DATAZ1 = 0x37;	//Z-Axis Data 1
 #define NV_MAGIC_2 1
 #define NV_MODE 3
 
-#define FILTERSIZE 4
-#define FILTEROVERSAMPLE 2
-#define VECTORBOOST 0
+#define FILTERSIZE 1
+#define FILTEROVERSAMPLE 1
 
 #define LOOPTIME 20
 
@@ -215,48 +214,6 @@ void loop(){
   }
 
 
-  // VECTOR BOOST - Add synthetic input to improve direction change
-  if (abs(lastX[0]) > mode/2) {  
-    int vX = (lastX[0] + 360) - (lastX[1] + 360);
-    
-    if (vX > 15) {
-      x = mode*2;
-      // Fill filter FIFO with new values
-      for (int i=1; i > FILTERSIZE; i--) {
-        lastX[i] = x;
-      }
-      Serial.println("RIGHT");
-    } else if (vX < -15) {
-      x = -mode*2;
-      // Fill filter FIFO with new values
-      for (int i=1; i > FILTERSIZE; i--) {
-        lastX[i] = x;
-      }
-      Serial.println("LEFT");
-    }
-  }
-  
-  if (abs(lastY[0]) > mode/2) {  
-    int vY = (lastY[0] + 360) - (lastY[1] + 360);
-    
-    if (vY > 15) {
-      y = mode*2;
-      // Fill filter FIFO with new values
-      for (int i=1; i > FILTERSIZE; i--) {
-        lastY[i] = y;
-      }
-      Serial.println("DOWN");
-    } else if (vY < -15) {
-      y = +mode*2;
-      // Fill filter FIFO with new values
-      for (int i=1; i > FILTERSIZE; i--) {
-        lastY[i] = y;
-      }
-      Serial.println("UP");
-    }
-  }
-
-
   if (digitalRead(BUTTON_1) == LOW) {
     
     // Power off if held for 3 seconds
@@ -312,7 +269,7 @@ void loop(){
   // If the device has not been moved for 60 seconds power it down
 
   // Test if the device has been moved
-  if  ((abs(abs(stillX) - abs(x)) > 4) || (abs(abs(stillY) - abs(y)) > 4))  {
+  if  ((abs(abs(stillX) - abs(x)) > 6) || (abs(abs(stillY) - abs(y)) > 6))  {
     stillX = x;
     stillY = y;
 
@@ -334,16 +291,11 @@ void loop(){
     GoToSleep();
   }
   
-Serial.print(lastFilteredX, DEC);
-Serial.print(",");
-Serial.println(lastFilteredY, DEC);
-
   // If the device has not been moved assume it is centered
   if (millis() - centerTime > 3000) {
     offsetX = -stillX;
     offsetY = -stillY;
     centerTime = millis();
-    Serial.println("CENTERED");
   }
 
   int cycle = loopCount % 1;
