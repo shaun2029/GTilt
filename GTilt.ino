@@ -45,7 +45,7 @@ char DATAZ1 = 0x37;	//Z-Axis Data 1
 #define FILTERSIZE 1
 #define FILTEROVERSAMPLE 1
 
-#define LOOPTIME 20
+#define LOOPTIME 2
 
 #define DEBUG
 //#define DEBUG_READINGS
